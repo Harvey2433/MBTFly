@@ -22,7 +22,8 @@ public class MBTFlyClient implements ClientModInitializer {
     public static float detectionRange = 1.8f;
     public static boolean autoExitEnabled = false;
     public static boolean autoExitTriggered = false;
-    private static final Text PREFIX = Text.literal("§b[Maple Client]§e[MBTFly] ");
+    public static boolean isPaused = false;
+    private static final Text PREFIX = Text.literal("§b[Maple Client] §e[MBTFly] ");
 
     private void resetAllStates() {
         FlightControl.enabled = false;
@@ -31,10 +32,13 @@ public class MBTFlyClient implements ClientModInitializer {
         startPos = null;
         detectionRange = 1.8f;
         autoExitEnabled = false;
+        autoExitTriggered = false;
+        isPaused = false;
     }
 
     @Override
     public void onInitializeClient() {
+        resetAllStates();
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(literal("mbtfly")
                 .executes(context -> {
                     MinecraftClient client = MinecraftClient.getInstance();
@@ -42,23 +46,55 @@ public class MBTFlyClient implements ClientModInitializer {
                         client.player.sendMessage(PREFIX.copy().append("欢迎使用MBTFly v1"), false);
                         client.player.sendMessage(PREFIX.copy().append("帮助菜单:"), false);
                         client.player.sendMessage(PREFIX.copy().append("- /mbtfly <x> <y> <z> [range] [quit] §7: 自动飞行到指定坐标"), false);
-                        client.player.sendMessage(PREFIX.copy().append("- /mbtfly <x> ~ <z> [range] [quit] §7: 自动飞行到指定XZ坐标, 保持当前Y坐标"), false);
-                        client.player.sendMessage(PREFIX.copy().append("§7[range] 为目的地检测范围, 默认为 1.8 格进入此范围后, 飞行将停止"), false);
-                        client.player.sendMessage(PREFIX.copy().append("§7[quit] 为可选参数到达目的地后, 如果所有坐标均不为0, 则10秒后自动退出游戏"), false);
+                        client.player.sendMessage(PREFIX.copy().append("- /mbtfly <x> ~ <z> [range] [quit] §7: 自动飞行到指定XZ坐标，保持当前Y坐标"), false);
+                        client.player.sendMessage(PREFIX.copy().append("- /mbtfly pause §7: 暂停自动飞行"), false);
+                        client.player.sendMessage(PREFIX.copy().append("- /mbtfly resume §7: 恢复自动飞行"), false);
                         client.player.sendMessage(PREFIX.copy().append("- /mbtfly stop §7: 停止当前飞行"), false);
-                        client.player.sendMessage(PREFIX.copy().append("§c本模组没有任何自动避障功能, 建议在末地或下界顶层使用"), false);
+                        client.player.sendMessage(PREFIX.copy().append("§7[range] 为目的地检测范围，默认为 1.8 格。进入此范围后，飞行将停止。"), false);
+                        client.player.sendMessage(PREFIX.copy().append("§7[quit] 为可选参数。到达目的地后，如果所有坐标均不为0，则10秒后自动退出游戏。"), false);
+                        client.player.sendMessage(PREFIX.copy().append("§c本模组没有任何自动避障功能，建议在末地或下界顶层使用。"), false);
                     }
                     return Command.SINGLE_SUCCESS;
                 })
-                .then(literal("stop")
+                .then(literal("pause")
                         .executes(context -> {
                             MinecraftClient client = MinecraftClient.getInstance();
                             if (client.player != null) {
                                 if (FlightControl.enabled) {
                                     FlightControl.enabled = false;
-                                    client.player.sendMessage(PREFIX.copy().append("§6自动飞行已停止"), false);
+                                    isPaused = true;
+                                    client.player.sendMessage(PREFIX.copy().append("§a自动飞行已暂停。"), false);
                                 } else {
-                                    client.player.sendMessage(PREFIX.copy().append("§c当前没有进行中的自动飞行"), false);
+                                    client.player.sendMessage(PREFIX.copy().append("§c当前没有进行中的自动飞行。"), false);
+                                }
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        })
+                )
+                .then(literal("resume")
+                        .executes(context -> {
+                            MinecraftClient client = MinecraftClient.getInstance();
+                            if (client.player != null) {
+                                if (isPaused) {
+                                    FlightControl.enabled = true;
+                                    isPaused = false;
+                                    client.player.sendMessage(PREFIX.copy().append("§a自动飞行已恢复。"), false);
+                                } else {
+                                    client.player.sendMessage(PREFIX.copy().append("§c没有可恢复的自动飞行。"), false);
+                                }
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        })
+                )
+                .then(literal("stop")
+                        .executes(context -> {
+                            MinecraftClient client = MinecraftClient.getInstance();
+                            if (client.player != null) {
+                                if (FlightControl.enabled || isPaused) {
+                                    resetAllStates();
+                                    client.player.sendMessage(PREFIX.copy().append("§6自动飞行已停止。"), false);
+                                } else {
+                                    client.player.sendMessage(PREFIX.copy().append("§c当前没有进行中的自动飞行。"), false);
                                 }
                             }
                             return Command.SINGLE_SUCCESS;
@@ -69,15 +105,14 @@ public class MBTFlyClient implements ClientModInitializer {
                                 .then(argument("z", FloatArgumentType.floatArg())
                                         .executes(context -> {
                                             resetAllStates();
-                                            autoExitTriggered = false;
                                             MinecraftClient client = MinecraftClient.getInstance();
                                             if (client.player != null) {
                                                 float x = FloatArgumentType.getFloat(context, "x");
                                                 float y = FloatArgumentType.getFloat(context, "y");
                                                 float z = FloatArgumentType.getFloat(context, "z");
 
-                                                if (y < -64 || y > 1280) {
-                                                    client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 1279)"), false);
+                                                if (y < -64 || y > 320) {
+                                                    client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 320)。"), false);
                                                     return Command.SINGLE_SUCCESS;
                                                 }
 
@@ -94,7 +129,6 @@ public class MBTFlyClient implements ClientModInitializer {
                                         .then(argument("range", FloatArgumentType.floatArg())
                                                 .executes(context -> {
                                                     resetAllStates();
-                                                    autoExitTriggered = false;
                                                     MinecraftClient client = MinecraftClient.getInstance();
                                                     if (client.player != null) {
                                                         float x = FloatArgumentType.getFloat(context, "x");
@@ -102,8 +136,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         float z = FloatArgumentType.getFloat(context, "z");
                                                         float range = FloatArgumentType.getFloat(context, "range");
 
-                                                        if (y < -64 || y > 1280) {
-                                                            client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 1279)"), false);
+                                                        if (y < -64 || y > 320) {
+                                                            client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 320)。"), false);
                                                             return Command.SINGLE_SUCCESS;
                                                         }
 
@@ -119,14 +153,13 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         detectionRange = range;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a, 检测范围为 §f" + range), false);
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })
                                                 .then(literal("quit")
                                                         .executes(context -> {
                                                             resetAllStates();
-                                                            autoExitTriggered = false;
                                                             MinecraftClient client = MinecraftClient.getInstance();
                                                             if (client.player != null) {
                                                                 float x = FloatArgumentType.getFloat(context, "x");
@@ -134,8 +167,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                                 float z = FloatArgumentType.getFloat(context, "z");
                                                                 float range = FloatArgumentType.getFloat(context, "range");
 
-                                                                if (y < -64 || y > 1280) {
-                                                                    client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 1279)"), false);
+                                                                if (y < -64 || y > 320) {
+                                                                    client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 320)。"), false);
                                                                     return Command.SINGLE_SUCCESS;
                                                                 }
 
@@ -152,7 +185,7 @@ public class MBTFlyClient implements ClientModInitializer {
                                                                 autoExitEnabled = true;
 
                                                                 FlightControl.enabled = true;
-                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a, 检测范围为 §f" + range + "§a, 本次飞行已启用目的地自动退出"), false);
+                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range + "§a，到达后将自动退出"), false);
                                                             }
                                                             return Command.SINGLE_SUCCESS;
                                                         })
@@ -161,7 +194,6 @@ public class MBTFlyClient implements ClientModInitializer {
                                         .then(literal("quit")
                                                 .executes(context -> {
                                                     resetAllStates();
-                                                    autoExitTriggered = false;
                                                     MinecraftClient client = MinecraftClient.getInstance();
                                                     if (client.player != null) {
                                                         float x = FloatArgumentType.getFloat(context, "x");
@@ -175,7 +207,7 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         autoExitEnabled = true;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a, 本次飞行已启用目的地自动退出"), false);
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，到达后将自动退出"), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })
@@ -186,7 +218,6 @@ public class MBTFlyClient implements ClientModInitializer {
                                 .then(argument("z", FloatArgumentType.floatArg())
                                         .executes(context -> {
                                             resetAllStates();
-                                            autoExitTriggered = false;
                                             MinecraftClient client = MinecraftClient.getInstance();
                                             if (client.player != null) {
                                                 float x = FloatArgumentType.getFloat(context, "x");
@@ -206,7 +237,6 @@ public class MBTFlyClient implements ClientModInitializer {
                                         .then(argument("range", FloatArgumentType.floatArg())
                                                 .executes(context -> {
                                                     resetAllStates();
-                                                    autoExitTriggered = false;
                                                     MinecraftClient client = MinecraftClient.getInstance();
                                                     if (client.player != null) {
                                                         float x = FloatArgumentType.getFloat(context, "x");
@@ -226,14 +256,13 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         detectionRange = range;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a, 检测范围为 §f" + range), false);
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })
                                                 .then(literal("quit")
                                                         .executes(context -> {
                                                             resetAllStates();
-                                                            autoExitTriggered = false;
                                                             MinecraftClient client = MinecraftClient.getInstance();
                                                             if (client.player != null) {
                                                                 float x = FloatArgumentType.getFloat(context, "x");
@@ -254,7 +283,7 @@ public class MBTFlyClient implements ClientModInitializer {
                                                                 autoExitEnabled = true;
 
                                                                 FlightControl.enabled = true;
-                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a, 检测范围为 §f" + range + "§a, 本次飞行已启用目的地自动退出"), false);
+                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range + "§a，到达后将自动退出"), false);
                                                             }
                                                             return Command.SINGLE_SUCCESS;
                                                         })
@@ -263,7 +292,6 @@ public class MBTFlyClient implements ClientModInitializer {
                                         .then(literal("quit")
                                                 .executes(context -> {
                                                     resetAllStates();
-                                                    autoExitTriggered = false;
                                                     MinecraftClient client = MinecraftClient.getInstance();
                                                     if (client.player != null) {
                                                         float x = FloatArgumentType.getFloat(context, "x");
@@ -277,7 +305,7 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         autoExitEnabled = true;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a, 本次飞行已启用目的地自动退出"), false);
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，到达后将自动退出"), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })

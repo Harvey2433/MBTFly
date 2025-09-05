@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "mbtfly",
+  "version": "${version}",
+  "name": "MBTFly",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/mbtfly/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "me.maple_bamboo_team.mbtfly.client.MbtflyClient"
+    ],
+    "main": [
+      "me.maple_bamboo_team.mbtfly.Mbtfly"
+    ]
+  },
+  "mixins": [
+    "mbtfly.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "me.maple_bamboo_team.mbtfly.mixin",
+  "package": "top.maple_bamboo_team.mbtfly.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
   ],

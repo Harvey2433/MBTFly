@@ -1,6 +1,6 @@
-package me.maple_bamboo_team.mbtfly.mixin;
+package top.maple_bamboo_team.mbtfly.mixin;
 
-import me.maple_bamboo_team.mbtfly.util.AimingUtils;
+import top.maple_bamboo_team.mbtfly.util.AimingUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Text;
@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import me.maple_bamboo_team.mbtfly.client.MBTFlyClient;
-import me.maple_bamboo_team.mbtfly.client.flight.FlightControl;
+import top.maple_bamboo_team.mbtfly.client.MBTFlyClient;
+import top.maple_bamboo_team.mbtfly.client.flight.FlightControl;
 import java.time.Instant;
 import java.time.Duration;
 import java.time.ZoneId;

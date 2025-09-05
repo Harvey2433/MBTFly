@@ -11,7 +11,7 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "me.maple_bamboo_team.mbtfly.client.MBTFlyClient"
+      "top.maple_bamboo_team.mbtfly.client.MBTFlyClient"
     ]
   },
   "mixins": ["mbtfly.mixins.json"],

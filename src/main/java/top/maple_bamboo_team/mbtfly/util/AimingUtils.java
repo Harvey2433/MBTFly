@@ -1,4 +1,4 @@
-package me.maple_bamboo_team.mbtfly.util;
+package top.maple_bamboo_team.mbtfly.util;
 
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;

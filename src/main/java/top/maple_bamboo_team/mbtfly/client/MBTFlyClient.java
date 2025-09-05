@@ -8,6 +8,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import top.maple_bamboo_team.mbtfly.client.flight.FlightControl;
+
+import java.time.Duration;
 import java.time.Instant;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
@@ -19,10 +21,12 @@ public class MBTFlyClient implements ClientModInitializer {
     public static Instant startTime = null;
     public static String playerName = null;
     public static Vec3d startPos = null;
-    public static float detectionRange = 1.8f;
+    public static float detectionRange = 1.6f;
     public static boolean autoExitEnabled = false;
     public static boolean autoExitTriggered = false;
     public static boolean isPaused = false;
+    public static Duration pausedDuration = Duration.ZERO;
+    private static Instant pauseStartTime = null;
     private static final Text PREFIX = Text.literal("§b[Maple Client] §e[MBTFly] ");
 
     private void resetAllStates() {
@@ -30,10 +34,12 @@ public class MBTFlyClient implements ClientModInitializer {
         destination = null;
         startTime = null;
         startPos = null;
-        detectionRange = 1.8f;
+        detectionRange = 1.6f;
         autoExitEnabled = false;
         autoExitTriggered = false;
         isPaused = false;
+        pausedDuration = Duration.ZERO;
+        pauseStartTime = null;
     }
 
     @Override
@@ -46,13 +52,13 @@ public class MBTFlyClient implements ClientModInitializer {
                         client.player.sendMessage(PREFIX.copy().append("欢迎使用MBTFly v1"), false);
                         client.player.sendMessage(PREFIX.copy().append("帮助菜单:"), false);
                         client.player.sendMessage(PREFIX.copy().append("- /mbtfly <x> <y> <z> [range] [quit] §7: 自动飞行到指定坐标"), false);
-                        client.player.sendMessage(PREFIX.copy().append("- /mbtfly <x> ~ <z> [range] [quit] §7: 自动飞行到指定XZ坐标，保持当前Y坐标"), false);
+                        client.player.sendMessage(PREFIX.copy().append("- /mbtfly <x> ~ <z> [range] [quit] §7: 自动飞行到指定XZ坐标, 保持当前Y坐标"), false);
                         client.player.sendMessage(PREFIX.copy().append("- /mbtfly pause §7: 暂停自动飞行"), false);
                         client.player.sendMessage(PREFIX.copy().append("- /mbtfly resume §7: 恢复自动飞行"), false);
                         client.player.sendMessage(PREFIX.copy().append("- /mbtfly stop §7: 停止当前飞行"), false);
-                        client.player.sendMessage(PREFIX.copy().append("§7[range] 为目的地检测范围，默认为 1.8 格。进入此范围后，飞行将停止。"), false);
-                        client.player.sendMessage(PREFIX.copy().append("§7[quit] 为可选参数。到达目的地后，如果所有坐标均不为0，则10秒后自动退出游戏。"), false);
-                        client.player.sendMessage(PREFIX.copy().append("§c本模组没有任何自动避障功能，建议在末地或下界顶层使用。"), false);
+                        client.player.sendMessage(PREFIX.copy().append("§7[range] 为可选参数. 指定目的地检测范围, 默认为2格.进入此范围后, 飞行将停止"), false);
+                        client.player.sendMessage(PREFIX.copy().append("§7[quit] 为可选参数. 到达目的地后, 则10秒后自动退出游戏"), false);
+                        client.player.sendMessage(PREFIX.copy().append("§c本模组没有任何自动避障功能, 建议在末地或下界顶层使用"), false);
                     }
                     return Command.SINGLE_SUCCESS;
                 })
@@ -63,9 +69,10 @@ public class MBTFlyClient implements ClientModInitializer {
                                 if (FlightControl.enabled) {
                                     FlightControl.enabled = false;
                                     isPaused = true;
-                                    client.player.sendMessage(PREFIX.copy().append("§a自动飞行已暂停。"), false);
+                                    pauseStartTime = Instant.now();
+                                    client.player.sendMessage(PREFIX.copy().append("§a自动飞行已暂停"), false);
                                 } else {
-                                    client.player.sendMessage(PREFIX.copy().append("§c当前没有进行中的自动飞行。"), false);
+                                    client.player.sendMessage(PREFIX.copy().append("§c当前没有进行中的自动飞行"), false);
                                 }
                             }
                             return Command.SINGLE_SUCCESS;
@@ -78,9 +85,13 @@ public class MBTFlyClient implements ClientModInitializer {
                                 if (isPaused) {
                                     FlightControl.enabled = true;
                                     isPaused = false;
-                                    client.player.sendMessage(PREFIX.copy().append("§a自动飞行已恢复。"), false);
+                                    if (pauseStartTime != null) {
+                                        pausedDuration = pausedDuration.plus(Duration.between(pauseStartTime, Instant.now()));
+                                        pauseStartTime = null;
+                                    }
+                                    client.player.sendMessage(PREFIX.copy().append("§a自动飞行已恢复"), false);
                                 } else {
-                                    client.player.sendMessage(PREFIX.copy().append("§c没有可恢复的自动飞行。"), false);
+                                    client.player.sendMessage(PREFIX.copy().append("§c没有可恢复的自动飞行"), false);
                                 }
                             }
                             return Command.SINGLE_SUCCESS;
@@ -92,9 +103,9 @@ public class MBTFlyClient implements ClientModInitializer {
                             if (client.player != null) {
                                 if (FlightControl.enabled || isPaused) {
                                     resetAllStates();
-                                    client.player.sendMessage(PREFIX.copy().append("§6自动飞行已停止。"), false);
+                                    client.player.sendMessage(PREFIX.copy().append("§6自动飞行已停止"), false);
                                 } else {
-                                    client.player.sendMessage(PREFIX.copy().append("§c当前没有进行中的自动飞行。"), false);
+                                    client.player.sendMessage(PREFIX.copy().append("§c当前没有进行中的自动飞行"), false);
                                 }
                             }
                             return Command.SINGLE_SUCCESS;
@@ -111,8 +122,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                 float y = FloatArgumentType.getFloat(context, "y");
                                                 float z = FloatArgumentType.getFloat(context, "z");
 
-                                                if (y < -64 || y > 320) {
-                                                    client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 320)。"), false);
+                                                if (y < -64 || y > 1280) {
+                                                    client.player.sendMessage(PREFIX.copy().append("§cY坐标 §f" + y + " §c超出了有效范围 (-64 ~ 1279)"), false);
                                                     return Command.SINGLE_SUCCESS;
                                                 }
 
@@ -122,7 +133,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                 startPos = client.player.getPos();
 
                                                 FlightControl.enabled = true;
-                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ")"), false);
+
+                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + ""), false);
                                             }
                                             return Command.SINGLE_SUCCESS;
                                         })
@@ -136,8 +148,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         float z = FloatArgumentType.getFloat(context, "z");
                                                         float range = FloatArgumentType.getFloat(context, "range");
 
-                                                        if (y < -64 || y > 320) {
-                                                            client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 320)。"), false);
+                                                        if (y < -64 || y > 1280) {
+                                                            client.player.sendMessage(PREFIX.copy().append("§cY坐标 §f" + y + " §c超出了有效范围 (-64 ~ 1279)"), false);
                                                             return Command.SINGLE_SUCCESS;
                                                         }
 
@@ -153,7 +165,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         detectionRange = range;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range), false);
+                                                        
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + " §a, 检测范围为 §f" + range), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })
@@ -167,8 +180,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                                 float z = FloatArgumentType.getFloat(context, "z");
                                                                 float range = FloatArgumentType.getFloat(context, "range");
 
-                                                                if (y < -64 || y > 320) {
-                                                                    client.player.sendMessage(PREFIX.copy().append("§c错误: Y坐标 §f" + y + " §c超出了有效范围 (-64 ~ 320)。"), false);
+                                                                if (y < -64 || y > 1280) {
+                                                                    client.player.sendMessage(PREFIX.copy().append("§cY坐标 §f" + y + " §c超出了有效范围 (-64 ~ 1279)"), false);
                                                                     return Command.SINGLE_SUCCESS;
                                                                 }
 
@@ -185,7 +198,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                                 autoExitEnabled = true;
 
                                                                 FlightControl.enabled = true;
-                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range + "§a，到达后将自动退出"), false);
+                                                                
+                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + " §a, 检测范围为 §f" + range + "§a, 到达后将自动退出"), false);
                                                             }
                                                             return Command.SINGLE_SUCCESS;
                                                         })
@@ -207,7 +221,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         autoExitEnabled = true;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，到达后将自动退出"), false);
+                                                        
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + " §a, 到达后将自动退出"), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })
@@ -230,7 +245,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                 startPos = client.player.getPos();
 
                                                 FlightControl.enabled = true;
-                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ")"), false);
+                                                
+                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + ""), false);
                                             }
                                             return Command.SINGLE_SUCCESS;
                                         })
@@ -256,7 +272,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         detectionRange = range;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range), false);
+                                                        
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + " §a, 检测范围为 §f" + range), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })
@@ -283,7 +300,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                                 autoExitEnabled = true;
 
                                                                 FlightControl.enabled = true;
-                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，检测范围为 §f" + range + "§a，到达后将自动退出"), false);
+                                                                
+                                                                client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + " §a, 检测范围为 §f" + range + "§a, 到达后将自动退出"), false);
                                                             }
                                                             return Command.SINGLE_SUCCESS;
                                                         })
@@ -305,7 +323,8 @@ public class MBTFlyClient implements ClientModInitializer {
                                                         autoExitEnabled = true;
 
                                                         FlightControl.enabled = true;
-                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §f(" + x + ", " + y + ", " + z + ") §a，到达后将自动退出"), false);
+                                                        
+                                                        client.player.sendMessage(PREFIX.copy().append("§a开始自动飞行至 §b" + x + ", " + y + ", " + z + " §a, 到达后将自动退出"), false);
                                                     }
                                                     return Command.SINGLE_SUCCESS;
                                                 })

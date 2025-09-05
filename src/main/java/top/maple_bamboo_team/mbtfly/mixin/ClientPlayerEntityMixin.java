@@ -102,7 +102,7 @@ public class ClientPlayerEntityMixin {
                 client.options.sneakKey.setPressed(false);
 
                 Instant endTime = Instant.now();
-                Duration flightDuration = Duration.between(MBTFlyClient.startTime, endTime);
+                Duration flightDuration = Duration.between(MBTFlyClient.startTime, endTime).minus(MBTFlyClient.pausedDuration);
                 double originalTotalDistance = MBTFlyClient.startPos.distanceTo(MBTFlyClient.destination);
 
                 long totalSeconds = flightDuration.getSeconds();
@@ -117,6 +117,7 @@ public class ClientPlayerEntityMixin {
                 if (minutes > 0) timeString.append(minutes).append("分");
                 timeString.append(seconds).append("秒");
 
+                
                 player.sendMessage(PREFIX.copy().append("§a============================================="), false);
                 player.sendMessage(PREFIX.copy().append("§a            MBTFly 自动飞行数据统计             "), false);
                 player.sendMessage(PREFIX.copy().append("§a============================================="), false);
@@ -137,7 +138,7 @@ public class ClientPlayerEntityMixin {
                     player.sendMessage(PREFIX.copy().append("§6已到达目的地, 10秒后自动退出游戏"), false);
                 }
             } else if (flatDistance <= MBTFlyClient.detectionRange) {
-                // 如果只在水平范围内，停止水平移动和转头，只执行垂直移动
+                // 如果只在水平范围内, 停止水平移动和转头, 只执行垂直移动
                 client.options.forwardKey.setPressed(false);
                 client.options.leftKey.setPressed(false);
                 client.options.rightKey.setPressed(false);

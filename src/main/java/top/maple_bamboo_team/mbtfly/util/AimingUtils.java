@@ -6,7 +6,7 @@ import net.minecraft.util.math.Vec3d;
 public class AimingUtils {
 
     /**
-     * 计算玩家到目标点的偏航角 (yaw)。
+     * 计算玩家到目标点的偏航角 (yaw)
      * @param playerPos 玩家当前位置
      * @param targetPos 目标位置
      * @return 偏航角
@@ -17,7 +17,7 @@ public class AimingUtils {
     }
 
     /**
-     * 计算玩家到目标点的俯仰角 (pitch)。
+     * 计算玩家到目标点的俯仰角 (pitch)
      * @param playerPos 玩家当前位置
      * @param targetPos 目标位置
      * @return 俯仰角
@@ -28,7 +28,7 @@ public class AimingUtils {
     }
 
     /**
-     * 直接将玩家的视角对准目标。
+     * 直接将玩家的视角对准目标
      * @param player 玩家实例
      * @param target 目标位置
      */

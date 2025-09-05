@@ -11,15 +11,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "me.maple_bamboo_team.mbtfly.client.MbtflyClient"
-    ],
-    "main": [
-      "me.maple_bamboo_team.mbtfly.Mbtfly"
+      "me.maple_bamboo_team.mbtfly.client.MBTFlyClient"
     ]
   },
-  "mixins": [
-    "mbtfly.mixins.json"
-  ],
+  "mixins": ["mbtfly.mixins.json"],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
